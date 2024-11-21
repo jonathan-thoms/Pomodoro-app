@@ -1,19 +1,9 @@
-#!/usr/bin/python3
+# Created by Jonathan Thomas
 
-# Pomodoro.py
-# Created by Guido Minieri
-# Date - June 2017
 # My personal take on the most popular productivity tool out there.
-
-
-# Import libraries
 import tkinter as tk
 from tkinter import messagebox
 
-
-# FUNCTIONS
-
-# Countdown
 def count(timer):
     global is_break
     global job
@@ -94,9 +84,9 @@ def start():
 
 # VARIABLE DECLARATIONS
 # define sessions and breaks
-SHORT_BREAK = 5# * 60  # 5 mins after every pomodoro
-LONG_BREAK = 20# * 60  # 20 mins after 4 pomodori
-SESSION = 25# * 60  # lenght of a pomodoro session
+SHORT_BREAK = 5
+LONG_BREAK = 20
+SESSION = 25
 
 # session counter
 SESS_COUNTER = 0
@@ -105,8 +95,7 @@ SESS_COUNTER = 0
 is_break = False
 
 
-# TKINTER SETTINGS
-
+# UI Setup
 # root & title
 root = tk.Tk()
 root.title('Pomodoro')
