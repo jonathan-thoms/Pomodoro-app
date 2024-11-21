@@ -1,85 +1,155 @@
+#!/usr/bin/python3
 
-# ---------------------------- CONSTANTS ------------------------------- #
-PINK = "#e2979c"
-RED = "#e7305b"
-GREEN = "#9bdeac"
-YELLOW = "#f7f5dd"
-FONT_NAME = "Courier"
-WORK_MIN = 2
-SHORT_BREAK_MIN = 5
-LONG_BREAK_MIN = 20
-reps=0
-timer_ob=None
-# ---------------------------- TIMER RESET ------------------------------- #
+# Pomodoro.py
+# Created by Guido Minieri
+# Date - June 2017
+# My personal take on the most popular productivity tool out there.
 
-# ---------------------------- TIMER MECHANISM ------------------------------- # 
-def reset_timer():
-    global timer_ob
-    window.after_cancel(timer_ob)
-    canvas.itemconfig(timer, text="00:00")
-    timer_title.config(text="Timer")
-    checkmark.config(text="")
 
-def start_timer():
-    global reps
-    reps+=1
-    session=0
-    mark=""
+# Import libraries
+import tkinter as tk
+from tkinter import messagebox
 
-    if reps%2==1:
-        minutes=WORK_MIN
-        timer_title.config(text="WORK", fg=GREEN)
-        session+=1
-        for i in range(session-1):
-            mark+="✔"
-            checkmark.config(text=mark)
-    elif reps%8==0:
-        minutes=LONG_BREAK_MIN
-        timer_title.config(text="BREAK", fg=RED)
+
+# FUNCTIONS
+
+# Countdown
+def count(timer):
+    global is_break
+    global job
+    global SESS_COUNTER
+
+    if timer <= -1:
+
+        # toggle is break
+        is_break = not is_break
+
+        # prompt and start new session
+        if is_break and SESS_COUNTER % 4 != 0:
+            prompt_answer = messagebox.askquestion("Session Ended!", "Are you ready for a break?", icon='question')
+        elif is_break and SESS_COUNTER % 4 == 0:
+            prompt_answer = messagebox.askquestion("4 POMODORI!", "Do you think you deserve a very long break", icon='question')
+        else:
+            prompt_answer = messagebox.askquestion("Time's up!", "Ready for a new session?", icon='question')
+
+
+
+        if prompt_answer == 'yes' and SESS_COUNTER % 4 != 0 and is_break:
+            root.after_cancel(job)
+            count(SHORT_BREAK)
+        elif prompt_answer == 'yes' and SESS_COUNTER % 4 == 0 and is_break:
+            root.after_cancel(job)
+            count(LONG_BREAK)
+        elif prompt_answer == 'no':
+            stop_count()
+        else:
+            SESS_COUNTER += 1
+            count(SESSION)
+        return
+
+    m, s = divmod(timer, 60)
+    time_label.configure(text='{:02d}:{:02d}'.format(m, s))
+    if is_break:
+        cnt_label.configure(text='BREAK!')
     else:
-        minutes=SHORT_BREAK_MIN
-        timer_title.config(text="BREAK", fg=PINK)
-    if session==4:
-        session=0
-    window.grab_set()
-    countdown(minutes*60)
+        cnt_label.configure(text='Streak: {}'.format(SESS_COUNTER))
+    job = root.after(1000, count, timer - 1)
 
-# ---------------------------- COUNTDOWN MECHANISM ------------------------------- # 
-def countdown(count):
-    global timer_ob
-    if count>=0:
-        min=int(count/60)
-        sec=int(count%60)
-        if sec==0:
-            sec="00"
-        elif sec<10:
-            sec="0"+str(sec)
-        canvas.itemconfig(timer, text=f"{min} : {sec}")
-        timer_ob=window.after(1000, countdown, count-1)
-# ---------------------------- UI SETUP ------------------------------- #
-from tkinter import *
 
-window = Tk()
-window.title("Pomodoro")
-window.config(height=600, width=600, padx=100, pady=100, bg=YELLOW)
+# stops the countdown and resets the counter
+def stop_count():
+    global SESS_COUNTER
+    global is_break
 
-timer_title=Label(text="Timer", fg=GREEN, bg=YELLOW, font=(FONT_NAME, 40, "bold"))
-timer_title.grid(column=1, row=0)
+    root.after_cancel(job)
+    time_label.configure(text='{:02d}:{:02d}'.format(0, 0))
+    SESS_COUNTER = 0
+    is_break = False
+    cnt_label.configure(text='Streak: {}'.format(0))
+    start_btn.configure(text="Start", command=lambda: start())
 
-start_b=Button(text="Start", command=start_timer)
-reset_b=Button(text="Reset", command=reset_timer)
 
-checkmark=Label(text="", fg=GREEN)
+# pauses the counter
+def pause_count():
+    global time_label
 
-start_b.grid(column=0, row=2)
-checkmark.grid(column=1,row=2)
-reset_b.grid(column=2, row=2)
+    start_btn.configure(text="Cont.", command=continue_count)
+    root.wait_window(time_label)
 
-canvas= Canvas(height=300, width=300, bg=YELLOW)
-tomato=PhotoImage(file="tomato.png")
-canvas.create_image(150,150, image=tomato)
-timer=canvas.create_text(150,170, text="00:00", fill="white",  font=(FONT_NAME, 17, "bold"))
-canvas.grid(column=1, row=1)
-start_timer()
 
-window.mainloop()
+# continue after pause
+def continue_count():
+    global wait
+
+    wait.destroy()
+
+# starts counting loop
+def start():
+    global SESSION
+    global SESS_COUNTER
+
+    SESS_COUNTER += 1
+    start_btn.configure(command=tk.DISABLED)
+    count(SESSION*60)
+
+# VARIABLE DECLARATIONS
+# define sessions and breaks
+SHORT_BREAK = 5# * 60  # 5 mins after every pomodoro
+LONG_BREAK = 20# * 60  # 20 mins after 4 pomodori
+SESSION = 25# * 60  # lenght of a pomodoro session
+
+# session counter
+SESS_COUNTER = 0
+
+# tells the program if the next session is going to be a break or not
+is_break = False
+
+
+# TKINTER SETTINGS
+
+# root & title
+root = tk.Tk()
+root.title('Pomodoro')
+root.geometry('200x200')
+root.config(padx=10, pady=10)
+
+
+# labels
+# main label area
+main_label = tk.Frame(root)
+main_label.grid(row=2, column=3, sticky='nesw')
+
+# column padding in window
+root.grid_columnconfigure(1, weight=1)
+root.grid_columnconfigure(2, weight=1)
+root.grid_columnconfigure(3, weight=1)
+
+# row padding in window
+root.grid_rowconfigure(1, weight=1)
+root.grid_rowconfigure(2, weight=1)
+
+
+# time label
+time_label = tk.Label(main_label, text='00:00')
+time_label.grid(row=1, column=1, columnspan=1)
+
+# placehodler label
+placeholder_label = tk.Label(main_label, text=' ~ ')
+placeholder_label.grid(row=1, column=2)
+
+# counter label
+cnt_label = tk.Label(main_label, text='Streak: 0')
+cnt_label.grid(row=1, column=3, columnspan=1)
+
+
+# buttons
+start_btn = tk.Button(main_label, text="Start", command=start)
+start_btn.grid(row=2, column=1)
+pause_btn = tk.Button(main_label, text="Pause", command=pause_count)
+pause_btn.grid(row=2, column=2)
+stop_btn = tk.Button(main_label, text="Stop", command=stop_count)
+stop_btn.grid(row=2, column=3)
+
+
+# MAINLOOP
+root.mainloop()
